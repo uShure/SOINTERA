@@ -39,10 +39,10 @@ const courses = [
   {
     name: "Наставник по стрижкам",
     url: "https://sointera-biz.ru/hair_mentor",
-    format: "offline",
+    format: "online",
     price: 65000,
     category: "education",
-    description: "Программа наставничества для опытных парикмахеров. Практика на манекенах в три круга. Ближайшие даты: 8 сентября, 6 октября, 3 ноября, 1 декабря",
+    description: "Программа наставничества для опытных парикмахеров. Онлайн формат с практикой на манекенах в три круга. Старт: 8 сентября",
     startDate: createDate(9, 8),
     duration: "3 месяца"
   },
@@ -59,10 +59,10 @@ const courses = [
   {
     name: "Наставник по колористике",
     url: "https://sointera-biz.ru/nastavnik-kolorist",
-    format: "offline",
+    format: "online",
     price: 65000,
     category: "education",
-    description: "Программа наставничества для опытных колористов. Ближайшие даты: 8 сентября, 6 октября, 3 ноября, 1 декабря",
+    description: "Программа наставничества для опытных колористов. Онлайн формат. Старт: 8 сентября",
     startDate: createDate(9, 8),
     duration: "3 месяца"
   },
