@@ -1,0 +1,332 @@
+import TelegramBot from 'node-telegram-bot-api';
+import { PrismaClient } from '@prisma/client';
+import { SalesAgent } from './lib/ai/sales-agent.js';
+import * as dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+import { createWriteStream } from 'fs';
+import { format } from 'util';
+
+// Загружаем переменные окружения
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
+const prisma = new PrismaClient();
+
+// Создаём папку для логов если её нет
+const logsDir = path.join(process.cwd(), 'logs');
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir);
+}
+
+// Создаём потоки для записи логов
+const logFile = createWriteStream(path.join(logsDir, `app-${new Date().toISOString().split('T')[0]}.log`), { flags: 'a' });
+const errorFile = createWriteStream(path.join(logsDir, `error-${new Date().toISOString().split('T')[0]}.log`), { flags: 'a' });
+
+// Функция для логирования
+const log = (level, message, ...args) => {
+  const timestamp = new Date().toISOString();
+  const formattedMessage = format(`[${timestamp}] [${level}] ${message}`, ...args);
+
+  // Выводим в консоль
+  if (level === 'ERROR') {
+    console.error(formattedMessage);
+  } else {
+    console.log(formattedMessage);
+  }
+
+  // Записываем в файл
+  if (level === 'ERROR') {
+    errorFile.write(formattedMessage + '\n');
+  }
+  logFile.write(formattedMessage + '\n');
+};
+
+class TelegramBotService {
+  constructor() {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    if (!token) {
+      throw new Error('TELEGRAM_BOT_TOKEN не установлен в переменных окружения');
+    }
+
+    // Создаем бота без прокси
+    this.bot = new TelegramBot(token, {
+      polling: {
+        interval: 300,
+        autoStart: true,
+        params: {
+          timeout: 10
+        }
+      }
+    });
+
+    this.salesAgent = new SalesAgent();
+    this.activeConversations = new Map();
+    this.isRunning = false;
+    this.messagesProcessed = 0;
+    this.sessionStartTime = new Date();
+  }
+
+  async start() {
+    log('INFO', '🚀 Запуск SOINTERA AI Продажника (Bot API)...');
+
+    // Получаем информацию о боте
+    try {
+      const me = await this.bot.getMe();
+      log('INFO', `🤖 Бот запущен: @${me.username} (${me.first_name})`);
+      log('INFO', `📊 ID бота: ${me.id}`);
+    } catch (error) {
+    log('ERROR', 'Детали ошибки:', error.message);
+    log('ERROR', 'Stack:', error.stack);
+      log('ERROR', 'Ошибка при получении информации о боте:', error);
+      throw error;
+    }
+
+    // Обработка текстовых сообщений
+    this.bot.on('message', async (msg) => {
+      // Игнорируем сообщения от групп/каналов если они не приватные
+      if (msg.chat.type !== 'private') {
+        return;
+      }
+
+      // Обрабатываем только текстовые сообщения
+      if (!msg.text) {
+        return;
+      }
+
+      await this.handleMessage(msg);
+    });
+
+    // Обработка ошибок polling
+    this.bot.on('polling_error', (error) => {
+      log('ERROR', 'Polling error:', error);
+    });
+
+    this.isRunning = true;
+    this.sessionStartTime = new Date();
+
+    log('INFO', '✅ AI Продажник активен и готов отвечать на сообщения!');
+    log('INFO', '📨 Ожидание входящих сообщений...');
+  }
+
+  async handleMessage(msg) {
+    const chatId = msg.chat.id;
+    const userId = msg.from?.id?.toString();
+    const text = msg.text;
+
+    if (!userId || !text) return;
+
+    // Получаем информацию об отправителе
+    const senderName = msg.from?.first_name || msg.from?.username || 'Клиент';
+    const username = msg.from?.username;
+
+    log('INFO', `💬 Новое сообщение от ${senderName} (@${username || 'без username'}): "${text}"`);
+
+    // Обработка команды /start
+    if (text === '/start') {
+      const welcomeMessage = `Привет! 👋
+
+Я помогу подобрать для вас идеальный курс в SOINTERA.
+
+Расскажите, что вас интересует? Например:
+• "Хочу научиться стричь с нуля"
+• "Уже работаю мастером, хочу повысить уровень"
+• "Интересуют онлайн курсы"
+• "Когда ближайшее очное обучение?"
+
+Или просто напишите свой вопрос - отвечу с удовольствием 😊`;
+      
+      await this.bot.sendMessage(chatId, welcomeMessage);
+      return;
+    }
+
+    try {
+      // Показываем, что бот печатает
+      await this.bot.sendChatAction(chatId, 'typing');
+
+      // Получаем или создаем клиента в базе
+      const customer = await this.getOrCreateCustomer(userId, msg.from);
+
+      // Получаем ID активной беседы
+      const conversationId = this.activeConversations.get(userId);
+
+      // Обрабатываем сообщение через AI агента
+      log('DEBUG', 'Анализирую сообщение через AI...');
+      const result = await this.salesAgent.processMessage(text, {
+        telegramId: userId,
+        username: customer.username || undefined,
+        firstName: customer.firstName || undefined,
+        classification: customer.classification || undefined,
+        stage: customer.stage || undefined,
+        conversationId: conversationId,
+      });
+
+      // Сохраняем беседу
+      const newConversationId = await this.salesAgent.saveConversation(
+        customer.id,
+        text,
+        result.response,
+        conversationId
+      );
+
+      this.activeConversations.set(userId, newConversationId);
+
+      // Обновляем классификацию клиента
+      if (result.classification) {
+        await prisma.customer.update({
+          where: { id: customer.id },
+          data: {
+            classification: result.classification,
+            stage: result.classification === 'ready_to_buy' ? 'ready_to_buy' : customer.stage,
+            lastInteraction: new Date()
+          }
+        });
+        log('INFO', `📊 Классификация клиента: ${result.classification}`);
+      }
+
+      // Отправляем ответ
+      log('INFO', `🤖 Отправляю ответ: "${result.response.substring(0, 100)}${result.response.length > 100 ? '...' : ''}"`);
+
+      if (result.response && result.response !== '') {
+      await this.sendLongMessage(chatId, result.response);
+    } else {
+      log('ERROR', 'Пустой ответ от AI агента');
+      await this.bot.sendMessage(chatId, 'Здравствуйте! К сожалению, произошла техническая ошибка. Пожалуйста, повторите ваш вопрос или обратитесь к менеджеру @natalylini');
+    }
+      
+      this.messagesProcessed++;
+      log('INFO', `✅ Ответ отправлен. Всего обработано сообщений: ${this.messagesProcessed}`);
+
+      // Если нужен менеджер, уведомляем
+      if (result.callManager && result.managerInfo) {
+        log('INFO', `⚠️ Требуется помощь менеджера! Передаю @${process.env.MANAGER_USERNAME}`);
+        await this.bot.sendMessage(chatId, 
+          `⚠️ Я передам ваш вопрос менеджеру @${process.env.MANAGER_USERNAME}, она свяжется с вами в ближайшее время для подробной консультации.`
+        );
+      }
+
+    } catch (error) {
+      log('ERROR', 'Ошибка обработки сообщения:', error);
+      try {
+        await this.bot.sendMessage(chatId,
+          'Извините, произошла техническая ошибка. Наш менеджер @natalylini свяжется с вами в ближайшее время.'
+        );
+      } catch (sendError) {
+        log('ERROR', 'Не удалось отправить сообщение об ошибке:', sendError);
+      }
+    }
+  }
+
+  async sendLongMessage(chatId, text) {
+    const maxLength = 4096;
+    
+    if (text.length <= maxLength) {
+      await this.bot.sendMessage(chatId, text);
+      return;
+    }
+
+    // Разбиваем длинное сообщение на части
+    const parts = [];
+    let currentPart = '';
+    const lines = text.split('\n');
+
+    for (const line of lines) {
+      if ((currentPart + '\n' + line).length > maxLength) {
+        if (currentPart) {
+          parts.push(currentPart);
+          currentPart = line;
+        } else {
+          let remainingLine = line;
+          while (remainingLine.length > maxLength) {
+            parts.push(remainingLine.substring(0, maxLength));
+            remainingLine = remainingLine.substring(maxLength);
+          }
+          if (remainingLine) {
+            currentPart = remainingLine;
+          }
+        }
+      } else {
+        currentPart = currentPart ? currentPart + '\n' + line : line;
+      }
+    }
+
+    if (currentPart) {
+      parts.push(currentPart);
+    }
+
+    // Отправляем части с небольшой задержкой
+    for (const part of parts) {
+      await this.bot.sendMessage(chatId, part);
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+
+  async getOrCreateCustomer(telegramId, sender) {
+    let customer = await prisma.customer.findUnique({
+      where: { telegramId }
+    });
+
+    if (!customer) {
+      log('INFO', `📝 Новый клиент! Добавляю в базу...`);
+      customer = await prisma.customer.create({
+        data: {
+          telegramId,
+          username: sender.username || null,
+          firstName: sender.first_name || null,
+          lastName: sender.last_name || null,
+          phoneNumber: null,
+        }
+      });
+    }
+
+    return customer;
+  }
+
+  async stop() {
+    this.isRunning = false;
+    log('INFO', '⏹ Остановка AI Продажника...');
+    
+    await this.bot.stopPolling();
+    await prisma.$disconnect();
+    log('INFO', '👋 AI Продажник остановлен');
+
+    logFile.end();
+    errorFile.end();
+  }
+}
+
+// Запуск приложения
+async function main() {
+  const bot = new TelegramBotService();
+
+  try {
+    await bot.start();
+
+    // Обработка сигнала остановки
+    process.on('SIGINT', async () => {
+      log('INFO', 'Получен сигнал остановки (SIGINT)...');
+      await bot.stop();
+      process.exit(0);
+    });
+
+    process.on('SIGTERM', async () => {
+      log('INFO', 'Получен сигнал остановки (SIGTERM)...');
+      await bot.stop();
+      process.exit(0);
+    });
+
+    // Держим процесс активным
+    await new Promise(() => {});
+
+  } catch (error) {
+    log('ERROR', 'Критическая ошибка:', error);
+    await bot.stop();
+    process.exit(1);
+  }
+}
+
+// Запускаем приложение
+main().catch((error) => {
+  log('ERROR', 'Ошибка запуска приложения:', error);
+  process.exit(1);
+});
