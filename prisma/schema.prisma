@@ -33,9 +33,15 @@ model Customer {
   stage            String?        // initial, considering, ready_to_buy, bought
   lastInteraction  DateTime?
   notes            String?
+  // Новые поля для аналитики
+  totalInteractions Int          @default(0)
+  conversionStage   String?      // на каком этапе конвертировался
+  preferredCourses  String?      // JSON с предпочтениями
+  satisfactionScore Float?       // оценка от менеджера 1-5
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   conversations    Conversation[]
+  analytics        CustomerAnalytics[]
 }
 
 model Conversation {
@@ -43,7 +49,15 @@ model Conversation {
   customerId String
   customer   Customer @relation(fields: [customerId], references: [id])
   messages   Message[]
-  status     String   @default("active") // active, transferred_to_manager, closed
+  status     String   @default("active") // active, transferred_to_manager, closed, converted
+  // Новые поля для аналитики
+  funnelStage String? // qualification, presentation, pricing, objections, closing
+  abTestGroup String? // A, B, C для тестирования разных подходов
+  outcome     String? // purchased, rejected, postponed, transferred
+  conversionTime Int? // время до конверсии в минутах
+  coursesShown String? // JSON с показанными курсами
+  objections  String? // JSON с возражениями клиента
+  managerRating Float? // оценка качества передачи менеджеру 1-5
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
@@ -54,6 +68,11 @@ model Message {
   conversation   Conversation @relation(fields: [conversationId], references: [id])
   role           String       // user, assistant, system
   content        String
+  // Новые поля для аналитики
+  promptVersion  String?      // версия промпта
+  responseTime   Int?         // время генерации ответа в мс
+  engagement     Float?       // оценка вовлеченности 1-5
+  effectiveness  Float?       // эффективность сообщения 1-5
   createdAt      DateTime     @default(now())
 }
 
@@ -62,6 +81,176 @@ model ManagerRequest {
   customerId String
   reason     String
   resolved   Boolean  @default(false)
+  // Новые поля
+  quality    Float?   // оценка качества лида 1-5
+  outcome    String?  // purchased, no_purchase, follow_up
+  feedback   String?  // комментарий менеджера
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+// Новые модели для самообучения
+
+model CustomerAnalytics {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  // Метрики поведения
+  sessionDuration     Int      // длительность сессии в секундах
+  messagesExchanged   Int      // количество сообщений
+  funnelCompletionRate Float   // % прохождения воронки
+  responsePattern     String?  // паттерн ответов клиента
+  interestLevel       Float    // уровень заинтересованности 1-5
+
+  // Результат
+  finalOutcome        String   // purchased, rejected, postponed
+  courseInterest      String?  // какие курсы интересовали
+  priceReaction       String?  // реакция на цену
+
+  createdAt DateTime @default(now())
+}
+
+model FunnelMetrics {
+  id    String @id @default(cuid())
+  date  DateTime @default(now())
+
+  // Метрики по этапам воронки
+  totalVisitors        Int @default(0)
+  qualificationStage   Int @default(0)
+  presentationStage    Int @default(0)
+  pricingStage         Int @default(0)
+  objectionStage       Int @default(0)
+  closingStage         Int @default(0)
+  conversions          Int @default(0)
+
+  // Конверсии между этапами
+  qualificationRate    Float @default(0)
+  presentationRate     Float @default(0)
+  pricingRate          Float @default(0)
+  objectionRate        Float @default(0)
+  closingRate          Float @default(0)
+
+  // Дополнительные метрики
+  avgSessionTime       Float @default(0)
+  avgMessagesPerUser   Float @default(0)
+  managerTransferRate  Float @default(0)
+
+  createdAt DateTime @default(now())
+}
+
+model ABTest {
+  id          String @id @default(cuid())
+  name        String // название теста
+  description String?
+
+  // Варианты тестирования
+  variantA    String // промпт A
+  variantB    String // промпт B
+  variantC    String? // промпт C (опционально)
+
+  // Метрики результативности
+  trafficSplit     String @default("33,33,34") // распределение трафика
+  conversionRateA  Float @default(0)
+  conversionRateB  Float @default(0)
+  conversionRateC  Float @default(0)
+
+  // Статистика
+  participantsA    Int @default(0)
+  participantsB    Int @default(0)
+  participantsC    Int @default(0)
+  conversionsA     Int @default(0)
+  conversionsB     Int @default(0)
+  conversionsC     Int @default(0)
+
+  // Статус
+  isActive    Boolean @default(true)
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+  winner      String? // A, B, or C
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PromptOptimization {
+  id          String @id @default(cuid())
+
+  // Информация о промпте
+  promptType  String   // qualification, presentation, pricing, objection
+  promptText  String   // текст промпта
+  version     String   // версия
+
+  // Метрики эффективности
+  usageCount       Int   @default(0)
+  conversionRate   Float @default(0)
+  avgEngagement    Float @default(0)
+  avgResponseTime  Float @default(0)
+
+  // Контекст использования
+  customerType     String? // beginner, experienced, interested
+  courseCategory   String? // haircut, color, management
+  timeOfDay        String? // morning, afternoon, evening
+
+  // Результативность
+  successfulUses   Int @default(0)
+  failedUses       Int @default(0)
+  managerEscalations Int @default(0)
+
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model LearningInsights {
+  id          String @id @default(cuid())
+
+  // Тип инсайта
+  insightType    String   // pattern, trend, recommendation
+  category       String   // customer_behavior, prompt_performance, funnel_optimization
+
+  // Данные инсайта
+  title          String
+  description    String
+  data           String   // JSON с данными
+  confidence     Float    // уверенность в инсайте 0-1
+
+  // Рекомендации
+  recommendation String?
+  expectedImpact Float?   // ожидаемое влияние на конверсию
+
+  // Статус
+  isApplied      Boolean @default(false)
+  appliedAt      DateTime?
+  actualImpact   Float?   // фактическое влияние после применения
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ManagerFeedback {
+  id          String @id @default(cuid())
+
+  // Связь с диалогом
+  conversationId String?
+  customerId     String
+
+  // Оценки
+  leadQuality      Float    // качество лида 1-5
+  informationCompleteness Float // полнота информации 1-5
+  customerReadiness Float   // готовность клиента 1-5
+
+  // Результат работы с клиентом
+  outcome          String   // purchased, rejected, follow_up, not_contacted
+  purchasedCourse  String?
+  purchaseAmount   Float?
+
+  // Комментарии и улучшения
+  feedback         String?  // текстовый комментарий
+  suggestions      String?  // предложения по улучшению
+
+  // Что можно было сделать лучше
+  improvementAreas String?  // JSON с областями улучшения
+
+  createdAt DateTime @default(now())
 }

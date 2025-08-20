@@ -1,6 +1,6 @@
 {
   "name": "sointera-ai-sales-bot",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,21 +8,24 @@
     "start:bot": "tsx src/telegram-bot.ts",
     "seed": "tsx src/lib/database/seed.ts",
     "db:push": "prisma db push",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "demo:learning": "tsx src/scripts/demo-learning.ts",
+    "analytics": "tsx -e \"import {LearningSytem} from './src/lib/ai/learning-system'; const ls = new LearningSytem(); ls.getDailySummary().then(console.log)\"",
+    "learning:cycle": "tsx -e \"import {LearningSytem} from './src/lib/ai/learning-system'; const ls = new LearningSytem(); ls.learningEngine.performLearningCycle().then(() => console.log('Learning cycle completed'))\""
   },
   "dependencies": {
-    "@prisma/client": "6.14.0",
+    "@prisma/client": "^6.14.0",
     "dotenv": "^16.4.7",
     "https-proxy-agent": "^7.0.5",
     "node-fetch": "^2.7.0",
     "node-telegram-bot-api": "^0.65.1",
     "openai": "5.12.2",
-    "prisma": "6.14.0",
     "telegram": "2.26.22",
     "tsx": "^4.20.0"
   },
   "devDependencies": {
     "@types/node": "24.2.1",
-    "@types/node-telegram-bot-api": "^0.64.7"
+    "@types/node-telegram-bot-api": "^0.64.7",
+    "prisma": "^6.14.0"
   }
 }
