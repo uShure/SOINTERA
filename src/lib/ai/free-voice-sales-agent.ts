@@ -132,9 +132,9 @@ export class FreeVoiceSalesAgent extends SalesAgent {
     const baseOptions = {
       voice: 'ru', // Используем русский голос
       language: 'ru',
-      speed: 140, // Немного медленнее для естественности
-      pitch: 48,  // Более нейтральный тон
-      volume: 95  // Немного тише для естественности
+      speed: 125, // Медленнее для естественности и теплоты
+      pitch: 54,  // Более высокий тон для мягкости и теплоты
+      volume: 88  // Тише для естественности
     };
 
     // Настройки для разных типов клиентов
@@ -142,33 +142,33 @@ export class FreeVoiceSalesAgent extends SalesAgent {
       // Для новичков - медленнее и четче, но естественно
       return {
         ...baseOptions,
-        speed: 125,
-        pitch: 46,
-        volume: 98
+        speed: 120,
+        pitch: 52,
+        volume: 90
       };
     } else if (context.classification === 'experienced') {
       // Для опытных - уверенно, но не роботизированно
       return {
         ...baseOptions,
-        speed: 155,
-        pitch: 50,
-        volume: 92
+        speed: 130,
+        pitch: 56,
+        volume: 85
       };
     } else if (context.classification === 'ready_to_buy') {
       // Для готовых к покупке - энергично, но человечно
       return {
         ...baseOptions,
-        speed: 150,
-        pitch: 52,
-        volume: 96
+        speed: 135,
+        pitch: 58,
+        volume: 88
       };
     } else if (context.classification === 'interested') {
       // Для заинтересованных - дружелюбно и естественно
       return {
         ...baseOptions,
-        speed: 135,
-        pitch: 47,
-        volume: 94
+        speed: 125,
+        pitch: 54,
+        volume: 86
       };
     }
 

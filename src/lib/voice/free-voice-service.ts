@@ -137,9 +137,9 @@ export class FreeVoiceService {
       const {
         voice = 'ru', // Используем русский голос
         language = 'ru',
-        speed = 140, // слова в минуту - медленнее для естественности
-        pitch = 48,  // 0-100 - более нейтральный тон
-        volume = 95  // 0-100 - немного тише для естественности
+        speed = 125, // слова в минуту - медленнее для естественности и теплоты
+        pitch = 54,  // 0-100 - более высокий тон для мягкости
+        volume = 88  // 0-100 - тише для естественности
       } = options;
 
       const outputFile = path.join(this.tempDir, `tts_${Date.now()}.wav`);
@@ -364,15 +364,15 @@ export class FreeVoiceService {
 
     switch (emotion) {
       case 'friendly':
-        return { ...baseSettings, speed: 140, pitch: 55, volume: 100 };
+        return { ...baseSettings, speed: 125, pitch: 56, volume: 88 };
       case 'professional':
-        return { ...baseSettings, speed: 160, pitch: 45, volume: 95 };
+        return { ...baseSettings, speed: 130, pitch: 54, volume: 85 };
       case 'enthusiastic':
-        return { ...baseSettings, speed: 170, pitch: 60, volume: 110 };
+        return { ...baseSettings, speed: 135, pitch: 58, volume: 90 };
       case 'calm':
-        return { ...baseSettings, speed: 130, pitch: 40, volume: 90 };
+        return { ...baseSettings, speed: 120, pitch: 52, volume: 82 };
       default:
-        return { ...baseSettings, speed: 150, pitch: 50, volume: 100 };
+        return { ...baseSettings, speed: 125, pitch: 54, volume: 86 };
     }
   }
 
@@ -401,15 +401,15 @@ export class FreeVoiceService {
 
     switch (customerType) {
       case 'beginner':
-        return { ...baseSettings, speed: 130, pitch: 45, volume: 105 }; // Медленнее, доверительнее
+        return { ...baseSettings, speed: 120, pitch: 54, volume: 86 }; // Медленнее, доверительнее, мягче
       case 'experienced':
-        return { ...baseSettings, speed: 170, pitch: 55, volume: 100 }; // Быстрее, профессиональнее
+        return { ...baseSettings, speed: 130, pitch: 56, volume: 82 }; // Быстрее, профессиональнее, но мягче
       case 'interested':
-        return { ...baseSettings, speed: 150, pitch: 50, volume: 100 }; // Стандартно
+        return { ...baseSettings, speed: 125, pitch: 55, volume: 84 }; // Стандартно, мягко
       case 'ready_to_buy':
-        return { ...baseSettings, speed: 160, pitch: 60, volume: 110 }; // Энергично, убедительно
+        return { ...baseSettings, speed: 135, pitch: 58, volume: 88 }; // Энергично, убедительно, но мягко
       default:
-        return { ...baseSettings, speed: 150, pitch: 50, volume: 100 };
+        return { ...baseSettings, speed: 125, pitch: 54, volume: 85 };
     }
   }
 
