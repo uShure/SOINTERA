@@ -37,9 +37,28 @@ export class FreeVoiceService {
    * 🔍 Поиск пути к eSpeak
    */
   private findEspeakPath(): string {
+    // 1) Env override
+    const envEspeak = process.env.ESPEAK_PATH || process.env.ESPEAK_NG_PATH;
+    if (envEspeak) {
+      try {
+        cpExecSync(`"${envEspeak}" --version`, { stdio: 'ignore' });
+        return envEspeak;
+      } catch {}
+    }
+
+    // 2) Use shell resolution if available
+    try {
+      const resolved = cpExecSync('command -v espeak-ng', { encoding: 'utf8' }).toString().trim();
+      if (resolved) {
+        return resolved;
+      }
+    } catch {}
+
     const possiblePaths = [
       'espeak-ng',
+      'espeak',
       '/usr/bin/espeak-ng',
+      '/bin/espeak-ng',
       '/usr/local/bin/espeak-ng',
       'C:\\Program Files\\eSpeak\\espeak.exe',
       'C:\\Program Files (x86)\\eSpeak\\espeak.exe'
@@ -65,6 +84,23 @@ export class FreeVoiceService {
    * 🔍 Поиск пути к Whisper
    */
   private findWhisperPath(): string {
+    // 1) Env override
+    const envWhisper = process.env.WHISPER_PATH;
+    if (envWhisper) {
+      try {
+        cpExecSync(`"${envWhisper}" --version`, { stdio: 'ignore' });
+        return envWhisper;
+      } catch {}
+    }
+
+    // 2) Use shell resolution if available
+    try {
+      const resolved = cpExecSync('command -v whisper', { encoding: 'utf8' }).toString().trim();
+      if (resolved) {
+        return resolved;
+      }
+    } catch {}
+
     const possiblePaths = [
       'whisper',
       'whisper-ai',
