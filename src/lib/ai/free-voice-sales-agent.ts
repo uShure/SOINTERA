@@ -44,6 +44,8 @@ export class FreeVoiceSalesAgent extends SalesAgent {
       try {
         textMessage = await this.voiceService.speechToText(message);
         console.log('🎧 Распознанная речь (Whisper):', textMessage);
+        // Если получилось распознать голосовое сообщение, автоматически включаем голосовой ответ
+        context.isVoiceMessage = true;
       } catch (error) {
         console.error('Ошибка распознавания речи (Whisper):', error);
         textMessage = 'Извините, не удалось распознать ваше голосовое сообщение. Можете написать текстом?';
@@ -54,7 +56,7 @@ export class FreeVoiceSalesAgent extends SalesAgent {
     const result = await super.processMessage(textMessage, context);
 
     // Определяем, нужно ли отвечать голосом
-    const shouldRespondWithVoice = this.shouldRespondWithVoice(context, result.response);
+    const shouldRespondWithVoice = this.shouldRespondWithVoice(context, result.response, isVoice);
 
     if (shouldRespondWithVoice && this.voiceEnabled) {
       try {
@@ -143,8 +145,13 @@ export class FreeVoiceSalesAgent extends SalesAgent {
   /**
    * 🎯 Определение, нужно ли отвечать голосом
    */
-  private shouldRespondWithVoice(context: CustomerContext, response: string): boolean {
+  private shouldRespondWithVoice(context: CustomerContext, response: string, isVoiceMessage: boolean = false): boolean {
     if (!this.autoVoiceResponse) return false;
+
+    // Если клиент отправил голосовое сообщение, всегда отвечаем голосом
+    if (isVoiceMessage || context.isVoiceMessage) {
+      return true;
+    }
 
     // Всегда голосом для важных ответов
     if (response.includes('Парикмахер с нуля') || 

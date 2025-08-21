@@ -36,6 +36,7 @@ export interface CustomerContext {
   classification?: string;
   stage?: string;
   conversationId?: string;
+  isVoiceMessage?: boolean;
 }
 
 const MANAGER_TRIGGERS = [
