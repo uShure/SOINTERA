@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { exec } from 'child_process';
+import { exec, execSync as cpExecSync } from 'child_process';
 import { promisify } from 'util';
 import ffmpeg from 'fluent-ffmpeg';
 
@@ -49,7 +49,7 @@ export class FreeVoiceService {
       try {
         console.log(`🔍 Проверяю путь: ${path}`);
         // Проверяем доступность
-        execSync(`"${path}" --version`, { stdio: 'ignore' });
+        cpExecSync(`"${path}" --version`, { stdio: 'ignore' });
         console.log(`✅ Найден eSpeak: ${path}`);
         return path;
       } catch (error) {
@@ -76,7 +76,7 @@ export class FreeVoiceService {
     for (const path of possiblePaths) {
       try {
         // Проверяем доступность
-        execSync(`"${path}" --version`, { stdio: 'ignore' });
+        cpExecSync(`"${path}" --version`, { stdio: 'ignore' });
         return path;
       } catch {
         continue;
