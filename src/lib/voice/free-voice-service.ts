@@ -229,6 +229,16 @@ export class FreeVoiceService {
       } else {
         console.warn('Файл с результатом Whisper не найден');
         console.log('🎧 Проверяю содержимое временной директории:', fs.readdirSync(this.tempDir));
+        
+        // Пробуем найти файл с другим именем
+        const files = fs.readdirSync(this.tempDir);
+        const txtFiles = files.filter(f => f.endsWith('.txt') && f.includes('stt_input'));
+        if (txtFiles.length > 0) {
+          const foundFile = path.join(this.tempDir, txtFiles[0]);
+          transcript = fs.readFileSync(foundFile, 'utf-8').trim();
+          console.log(`🎧 Найден альтернативный файл: ${foundFile}`);
+          console.log(`🎧 Whisper результат: "${transcript}"`);
+        }
       }
       
       // Удаляем временные файлы
@@ -304,12 +314,6 @@ export class FreeVoiceService {
         .audioFrequency(24000) // Увеличиваем частоту для лучшего качества
         .audioBitrate('64k')   // Увеличиваем битрейт для лучшего звучания
         .audioCodec('libmp3lame')
-        .audioFilters([
-          'highpass=f=150',    // Снижаем нижнюю границу для более теплого звука
-          'lowpass=f=10000',   // Увеличиваем верхнюю границу для четкости
-          'volume=1.1',        // Уменьшаем громкость для естественности
-          'compand=0.02,0.05,-60,-60,-30,-10,0,0,-35.1,-35.1,-25,-25,0,0,0,0:0,0,0,0' // Динамическое сжатие для естественности
-        ])
         .on('end', () => {
           try {
             const outputBuffer = fs.readFileSync(outputPath);
