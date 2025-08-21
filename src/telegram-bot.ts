@@ -1,6 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { PrismaClient } from '@prisma/client';
-import { BotVoiceSalesAgent } from './lib/ai/bot-voice-sales-agent.js';
+import { FreeVoiceSalesAgent } from './lib/ai/free-voice-sales-agent.js';
 import * as dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
@@ -60,7 +60,7 @@ class TelegramBotService {
       }
     });
 
-    this.salesAgent = new BotVoiceSalesAgent();
+    this.salesAgent = new FreeVoiceSalesAgent();
     this.activeConversations = new Map();
     this.isRunning = false;
     this.messagesProcessed = 0;
