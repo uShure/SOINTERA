@@ -47,10 +47,13 @@ export class FreeVoiceService {
 
     for (const path of possiblePaths) {
       try {
+        console.log(`🔍 Проверяю путь: ${path}`);
         // Проверяем доступность
         execSync(`"${path}" --version`, { stdio: 'ignore' });
+        console.log(`✅ Найден eSpeak: ${path}`);
         return path;
-      } catch {
+      } catch (error) {
+        console.log(`❌ Не найден: ${path}`);
         continue;
       }
     }
@@ -65,6 +68,7 @@ export class FreeVoiceService {
     const possiblePaths = [
       'whisper',
       'whisper-ai',
+      '/opt/whisper-venv/bin/whisper',
       '/usr/local/bin/whisper',
       'C:\\Users\\%USERNAME%\\AppData\\Local\\Programs\\Python\\Python39\\Scripts\\whisper.exe'
     ];
