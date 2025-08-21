@@ -479,6 +479,35 @@ export class FreeVoiceService {
 
     return result;
   }
+
+  /**
+   * 📁 Создание временного файла для отправки через Bot API
+   */
+  async createTempAudioFile(audioBuffer: Buffer, filename?: string): Promise<string> {
+    const tempFileName = filename || `voice_${Date.now()}.wav`;
+    const tempFilePath = path.join(this.tempDir, tempFileName);
+    
+    try {
+      fs.writeFileSync(tempFilePath, audioBuffer);
+      return tempFilePath;
+    } catch (error) {
+      console.error('Ошибка создания временного аудио файла:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 🗑️ Удаление временного аудио файла
+   */
+  async removeTempAudioFile(filePath: string): Promise<void> {
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (error) {
+      console.error('Ошибка удаления временного аудио файла:', error);
+    }
+  }
 }
 
 // Вспомогательная функция для execSync

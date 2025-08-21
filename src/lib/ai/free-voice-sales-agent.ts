@@ -293,6 +293,20 @@ export class FreeVoiceSalesAgent extends SalesAgent {
   }
 
   /**
+   * 📁 Создание временного файла для отправки через Bot API
+   */
+  async createTempAudioFile(audioBuffer: Buffer, filename?: string): Promise<string> {
+    return await this.voiceService.createTempAudioFile(audioBuffer, filename);
+  }
+
+  /**
+   * 🗑️ Удаление временного аудио файла
+   */
+  async removeTempAudioFile(filePath: string): Promise<void> {
+    await this.voiceService.removeTempAudioFile(filePath);
+  }
+
+  /**
    * 🔧 Установка голосового сервиса
    */
   async setupVoiceService(): Promise<{
