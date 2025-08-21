@@ -203,9 +203,10 @@ class TelegramBotService {
       }
 
       // Сохраняем беседу
+      const messageToSave = isVoiceMessage ? `[Голосовое сообщение]` : text;
       const newConversationId = await this.salesAgent.saveConversation(
         customer.id,
-        text,
+        messageToSave,
         result.response,
         conversationId
       );

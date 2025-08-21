@@ -180,11 +180,16 @@ export class FreeVoiceService {
         model = 'base' // tiny, base, small, medium, large
       } = options;
 
+      // Сначала конвертируем аудио в WAV формат для лучшей совместимости с Whisper
+      const convertedAudio = await this.convertAudio(audioBuffer, 'wav');
+      
       const inputFile = path.join(this.tempDir, `stt_input_${Date.now()}.wav`);
       const outputFile = path.join(this.tempDir, `stt_output_${Date.now()}.txt`);
       
-      // Записываем аудио во временный файл
-      fs.writeFileSync(inputFile, audioBuffer);
+      // Записываем конвертированное аудио во временный файл
+      fs.writeFileSync(inputFile, convertedAudio);
+      
+      console.log(`🎧 Запускаю Whisper для файла: ${inputFile}`);
       
       // Команда Whisper
       const command = `"${this.whisperPath}" "${inputFile}" --language ${language} --model ${model} --output_dir "${this.tempDir}" --output_format txt`;
@@ -195,6 +200,9 @@ export class FreeVoiceService {
       let transcript = '';
       if (fs.existsSync(outputFile)) {
         transcript = fs.readFileSync(outputFile, 'utf-8').trim();
+        console.log(`🎧 Whisper результат: "${transcript}"`);
+      } else {
+        console.warn('Файл с результатом Whisper не найден');
       }
       
       // Удаляем временные файлы
