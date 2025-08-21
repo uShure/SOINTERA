@@ -2,7 +2,7 @@ import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
 import { NewMessage } from 'telegram/events';
 import { PrismaClient } from '@prisma/client';
-import { SalesAgent } from './lib/ai/sales-agent';
+import { VoiceSalesAgent } from './lib/ai/voice-sales-agent';
 import readline from 'readline/promises';
 import * as dotenv from 'dotenv';
 import path from 'path';
@@ -46,7 +46,7 @@ const log = (level: 'INFO' | 'ERROR' | 'DEBUG', message: string, ...args: any[])
 
 class TelegramUserbot {
   private client: TelegramClient;
-  private salesAgent: SalesAgent;
+  private salesAgent: VoiceSalesAgent;
   private activeConversations: Map<string, string> = new Map();
   private isRunning: boolean = false;
   private messagesProcessed: number = 0;
@@ -61,7 +61,7 @@ class TelegramUserbot {
       connectionRetries: 5,
     });
 
-    this.salesAgent = new SalesAgent();
+    this.salesAgent = new VoiceSalesAgent();
   }
 
   async start() {
@@ -156,8 +156,32 @@ class TelegramUserbot {
     const userId = message.fromId.userId?.toString();
     if (!userId) return;
 
-    const text = message.text;
-    if (!text) return;
+    // Проверяем тип сообщения: текст или голос
+    let text = message.text;
+    let isVoiceMessage = false;
+    let voiceBuffer: Buffer | undefined;
+
+    if (!text && message.media) {
+      // Проверяем, является ли медиа голосовым сообщением
+      if (message.media.className === 'MessageMediaDocument') {
+        const document = message.media.document;
+        if (document && document.mimeType && document.mimeType.startsWith('audio/')) {
+          isVoiceMessage = true;
+          try {
+            // Скачиваем голосовое сообщение
+            const downloaded = await this.client.downloadMedia(message.media);
+            if (downloaded) {
+              voiceBuffer = Buffer.from(downloaded);
+              log('INFO', `🎤 Получено голосовое сообщение размером ${voiceBuffer.length} байт`);
+            }
+          } catch (error) {
+            log('ERROR', 'Ошибка скачивания голосового сообщения:', error);
+          }
+        }
+      }
+    }
+
+    if (!text && !isVoiceMessage) return;
 
     // Получаем информацию об отправителе
     const sender = await message.getSender();
@@ -174,14 +198,29 @@ class TelegramUserbot {
 
       // Обрабатываем сообщение через AI агента
       log('DEBUG', 'Анализирую сообщение через AI...');
-      const result = await this.salesAgent.processMessage(text, {
-        telegramId: userId,
-        username: customer.username || undefined,
-        firstName: customer.firstName || undefined,
-        classification: customer.classification || undefined,
-        stage: customer.stage || undefined,
-        conversationId: conversationId,
-      });
+      
+      let result;
+      if (isVoiceMessage && voiceBuffer) {
+        // Обрабатываем голосовое сообщение
+        result = await this.salesAgent.processIncomingMessage(voiceBuffer, {
+          telegramId: userId,
+          username: customer.username || undefined,
+          firstName: customer.firstName || undefined,
+          classification: customer.classification || undefined,
+          stage: customer.stage || undefined,
+          conversationId: conversationId,
+        }, true); // isVoice = true
+      } else {
+        // Обрабатываем текстовое сообщение
+        result = await this.salesAgent.processIncomingMessage(text, {
+          telegramId: userId,
+          username: customer.username || undefined,
+          firstName: customer.firstName || undefined,
+          classification: customer.classification || undefined,
+          stage: customer.stage || undefined,
+          conversationId: conversationId,
+        }, false); // isVoice = false
+      }
 
       // Сохраняем беседу
       const newConversationId = await this.salesAgent.saveConversation(
@@ -209,7 +248,40 @@ class TelegramUserbot {
       // Отправляем ответ
       log('INFO', `🤖 Отправляю ответ: "${result.response.substring(0, 100)}${result.response.length > 100 ? '...' : ''}"`);
 
+      // Отправляем текстовый ответ
       await message.reply({ message: result.response });
+      
+      // Если есть голосовой ответ, отправляем его тоже
+      if (result.voiceResponse) {
+        try {
+          log('INFO', '🎤 Отправляю голосовой ответ...');
+          
+          // Создаем временный файл для голосового сообщения
+          const tempVoicePath = `temp_voice_${Date.now()}.mp3`;
+          fs.writeFileSync(tempVoicePath, result.voiceResponse);
+          
+          // Отправляем голосовое сообщение
+          await message.reply({
+            file: tempVoicePath,
+            attributes: [
+              {
+                className: 'DocumentAttributeAudio',
+                duration: 0, // Длительность будет определена автоматически
+                title: 'Ответ SOINTERA AI',
+                performer: 'SOINTERA AI Продажник'
+              }
+            ]
+          });
+          
+          // Удаляем временный файл
+          fs.unlinkSync(tempVoicePath);
+          
+          log('INFO', '✅ Голосовой ответ отправлен');
+        } catch (error) {
+          log('ERROR', 'Ошибка отправки голосового ответа:', error);
+        }
+      }
+      
       this.messagesProcessed++;
       log('INFO', `✅ Ответ отправлен. Всего обработано сообщений: ${this.messagesProcessed}`);
 
