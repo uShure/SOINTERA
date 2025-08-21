@@ -112,7 +112,8 @@ export class FreeVoiceService {
     for (const path of possiblePaths) {
       try {
         // Проверяем доступность
-        cpExecSync(`"${path}" --version`, { stdio: 'ignore' });
+        // У некоторых сборок whisper нет ключа --version, используем --help
+        cpExecSync(`"${path}" --help`, { stdio: 'ignore' });
         return path;
       } catch {
         continue;
@@ -461,8 +462,8 @@ export class FreeVoiceService {
     }
 
     try {
-      // Проверяем Whisper
-      await execAsync(`"${this.whisperPath}" --version`);
+      // Проверяем Whisper (используем --help вместо --version)
+      await execAsync(`"${this.whisperPath}" --help`);
       result.whisper = true;
     } catch {
       result.whisper = false;
