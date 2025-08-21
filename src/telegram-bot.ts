@@ -1,6 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { PrismaClient } from '@prisma/client';
-import { SalesAgent } from './lib/ai/sales-agent.js';
+import { BotVoiceSalesAgent } from './lib/ai/bot-voice-sales-agent.js';
 import * as dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
@@ -60,7 +60,7 @@ class TelegramBotService {
       }
     });
 
-    this.salesAgent = new SalesAgent();
+    this.salesAgent = new BotVoiceSalesAgent();
     this.activeConversations = new Map();
     this.isRunning = false;
     this.messagesProcessed = 0;
@@ -82,19 +82,17 @@ class TelegramBotService {
       throw error;
     }
 
-    // Обработка текстовых сообщений
+    // Обработка всех сообщений (текст, голос, аудио)
     this.bot.on('message', async (msg) => {
       // Игнорируем сообщения от групп/каналов если они не приватные
       if (msg.chat.type !== 'private') {
         return;
       }
 
-      // Обрабатываем только текстовые сообщения
-      if (!msg.text) {
-        return;
+      // Обрабатываем текстовые, голосовые и аудио сообщения
+      if (msg.text || msg.voice || msg.audio) {
+        await this.handleMessage(msg);
       }
-
-      await this.handleMessage(msg);
     });
 
     // Обработка ошибок polling
@@ -112,9 +110,37 @@ class TelegramBotService {
   async handleMessage(msg) {
     const chatId = msg.chat.id;
     const userId = msg.from?.id?.toString();
-    const text = msg.text;
+    
+    // Проверяем тип сообщения: текст, голос или аудио
+    let text = msg.text;
+    let isVoiceMessage = false;
+    let voiceBuffer: Buffer | undefined;
 
-    if (!userId || !text) return;
+    if (!text && (msg.voice || msg.audio)) {
+      // Это голосовое или аудио сообщение
+      isVoiceMessage = true;
+      try {
+        // Скачиваем голосовое сообщение
+        const fileId = msg.voice?.file_id || msg.audio?.file_id;
+        if (fileId) {
+          const file = await this.bot.getFile(fileId);
+          const fileStream = await this.bot.getFileStream(fileId);
+          
+          // Читаем файл в буфер
+          const chunks: Buffer[] = [];
+          for await (const chunk of fileStream) {
+            chunks.push(chunk);
+          }
+          voiceBuffer = Buffer.concat(chunks);
+          
+          log('INFO', `🎤 Получено голосовое сообщение размером ${voiceBuffer.length} байт`);
+        }
+      } catch (error) {
+        log('ERROR', 'Ошибка скачивания голосового сообщения:', error);
+      }
+    }
+
+    if (!userId || (!text && !isVoiceMessage)) return;
 
     // Получаем информацию об отправителе
     const senderName = msg.from?.first_name || msg.from?.username || 'Клиент';
@@ -152,14 +178,29 @@ class TelegramBotService {
 
       // Обрабатываем сообщение через AI агента
       log('DEBUG', 'Анализирую сообщение через AI...');
-      const result = await this.salesAgent.processMessage(text, {
-        telegramId: userId,
-        username: customer.username || undefined,
-        firstName: customer.firstName || undefined,
-        classification: customer.classification || undefined,
-        stage: customer.stage || undefined,
-        conversationId: conversationId,
-      });
+      
+      let result;
+      if (isVoiceMessage && voiceBuffer) {
+        // Обрабатываем голосовое сообщение
+        result = await this.salesAgent.processIncomingMessage(voiceBuffer, {
+          telegramId: userId,
+          username: customer.username || undefined,
+          firstName: customer.firstName || undefined,
+          classification: customer.classification || undefined,
+          stage: customer.stage || undefined,
+          conversationId: conversationId,
+        }, true); // isVoice = true
+      } else {
+        // Обрабатываем текстовое сообщение
+        result = await this.salesAgent.processIncomingMessage(text, {
+          telegramId: userId,
+          username: customer.username || undefined,
+          firstName: customer.firstName || undefined,
+          classification: customer.classification || undefined,
+          stage: customer.stage || undefined,
+          conversationId: conversationId,
+        }, false); // isVoice = false
+      }
 
       // Сохраняем беседу
       const newConversationId = await this.salesAgent.saveConversation(
@@ -184,15 +225,38 @@ class TelegramBotService {
         log('INFO', `📊 Классификация клиента: ${result.classification}`);
       }
 
-      // Отправляем ответ
+            // Отправляем ответ
       log('INFO', `🤖 Отправляю ответ: "${result.response.substring(0, 100)}${result.response.length > 100 ? '...' : ''}"`);
 
       if (result.response && result.response !== '') {
-      await this.sendLongMessage(chatId, result.response);
-    } else {
-      log('ERROR', 'Пустой ответ от AI агента');
-      await this.bot.sendMessage(chatId, 'Здравствуйте! К сожалению, произошла техническая ошибка. Пожалуйста, повторите ваш вопрос или обратитесь к менеджеру @natalylini');
-    }
+        // Отправляем текстовый ответ
+        await this.sendLongMessage(chatId, result.response);
+        
+        // Если есть голосовой ответ, отправляем его тоже
+        if (result.voiceResponse) {
+          try {
+            log('INFO', '🎤 Отправляю голосовой ответ...');
+            
+            // Создаем временный файл для голосового сообщения
+            const tempVoicePath = await this.salesAgent.createTempAudioFile(result.voiceResponse);
+            
+            // Отправляем голосовое сообщение через Bot API
+            await this.bot.sendVoice(chatId, tempVoicePath, {
+              caption: '🎤 Ответ SOINTERA AI'
+            });
+            
+            // Удаляем временный файл
+            await this.salesAgent.removeTempAudioFile(tempVoicePath);
+            
+            log('INFO', '✅ Голосовой ответ отправлен');
+          } catch (error) {
+            log('ERROR', 'Ошибка отправки голосового ответа:', error);
+          }
+        }
+      } else {
+        log('ERROR', 'Пустой ответ от AI агента');
+        await this.bot.sendMessage(chatId, 'Здравствуйте! К сожалению, произошла техническая ошибка. Пожалуйста, повторите ваш вопрос или обратитесь к менеджеру @natalylini');
+      }
       
       this.messagesProcessed++;
       log('INFO', `✅ Ответ отправлен. Всего обработано сообщений: ${this.messagesProcessed}`);

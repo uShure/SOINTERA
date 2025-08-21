@@ -13,6 +13,7 @@
     "analytics": "tsx -e \"import {LearningSytem} from './src/lib/ai/learning-system'; const ls = new LearningSytem(); ls.getDailySummary().then(console.log)\"",
     "learning:cycle": "tsx -e \"import {LearningSytem} from './src/lib/ai/learning-system'; const ls = new LearningSytem(); ls.learningEngine.performLearningCycle().then(() => console.log('Learning cycle completed'))\"",
     "voice:test": "tsx src/scripts/voice-test.ts",
+    "voice:check": "tsx src/scripts/voice-check.ts",
     "voice:tts": "tsx src/scripts/voice-tts.ts",
     "voice:stt": "tsx src/scripts/voice-stt.ts",
     "voice:stats": "tsx src/scripts/voice-stats.ts"
@@ -22,11 +23,13 @@
     "@google-cloud/text-to-speech": "^6.2.0",
     "@prisma/client": "^6.14.0",
     "dotenv": "^16.4.7",
+    "espeak-ng": "^1.0.2",
     "fluent-ffmpeg": "^2.1.3",
     "https-proxy-agent": "^7.0.5",
     "node-fetch": "^2.7.0",
     "node-telegram-bot-api": "^0.65.1",
     "openai": "5.12.2",
+    "openai-whisper": "^1.0.2",
     "telegram": "2.26.22",
     "tsx": "^4.20.0"
   },

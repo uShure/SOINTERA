@@ -2,7 +2,7 @@ import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
 import { NewMessage } from 'telegram/events';
 import { PrismaClient } from '@prisma/client';
-import { VoiceSalesAgent } from './lib/ai/voice-sales-agent';
+import { FreeVoiceSalesAgent } from './lib/ai/free-voice-sales-agent';
 import readline from 'readline/promises';
 import * as dotenv from 'dotenv';
 import path from 'path';
@@ -46,7 +46,7 @@ const log = (level: 'INFO' | 'ERROR' | 'DEBUG', message: string, ...args: any[])
 
 class TelegramUserbot {
   private client: TelegramClient;
-  private salesAgent: VoiceSalesAgent;
+  private salesAgent: FreeVoiceSalesAgent;
   private activeConversations: Map<string, string> = new Map();
   private isRunning: boolean = false;
   private messagesProcessed: number = 0;
@@ -61,7 +61,7 @@ class TelegramUserbot {
       connectionRetries: 5,
     });
 
-    this.salesAgent = new VoiceSalesAgent();
+    this.salesAgent = new FreeVoiceSalesAgent();
   }
 
   async start() {
