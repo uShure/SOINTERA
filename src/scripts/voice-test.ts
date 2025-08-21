@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
-import { VoiceService } from '../voice/voice-service';
-import { SOINTERA_VOICE_CONFIG, VoiceConfigUtils } from '../voice/voice-config';
+import { VoiceService } from '../lib/voice/voice-service';
+import { SOINTERA_VOICE_CONFIG, VoiceConfigUtils } from '../lib/voice/voice-config';
 
 /**
  * 🎤 Тестирование голосового сервиса SOINTERA AI

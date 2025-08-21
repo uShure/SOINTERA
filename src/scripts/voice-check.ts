@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 
-import { FreeVoiceService } from '../voice/free-voice-service';
-import { FreeVoiceSalesAgent } from '../ai/free-voice-sales-agent';
+import { FreeVoiceService } from '../lib/voice/free-voice-service';
+import { FreeVoiceSalesAgent } from '../lib/ai/free-voice-sales-agent';
 
 /**
  * 🔍 Проверка доступности бесплатных голосовых сервисов SOINTERA AI
