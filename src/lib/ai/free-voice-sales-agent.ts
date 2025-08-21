@@ -41,6 +41,9 @@ export class FreeVoiceSalesAgent extends SalesAgent {
 
     // Если это голосовое сообщение - распознаем речь
     if (isVoice && Buffer.isBuffer(message)) {
+      console.log('🎧 Обрабатываю голосовое сообщение размером:', message.length, 'байт');
+      console.log('🎧 Первые 100 байт:', message.slice(0, 100).toString('hex'));
+      
       try {
         textMessage = await this.voiceService.speechToText(message);
         console.log('🎧 Распознанная речь (Whisper):', textMessage);
@@ -52,6 +55,7 @@ export class FreeVoiceSalesAgent extends SalesAgent {
         } else {
           // Если получилось распознать голосовое сообщение, автоматически включаем голосовой ответ
           context.isVoiceMessage = true;
+          console.log('✅ Голосовое сообщение успешно распознано, включаю голосовой ответ');
         }
       } catch (error) {
         console.error('Ошибка распознавания речи (Whisper):', error);

@@ -128,11 +128,17 @@ class TelegramBotService {
     if (!text && (msg.voice || msg.audio)) {
       // Это голосовое или аудио сообщение
       isVoiceMessage = true;
+      log('INFO', `🎤 Обнаружено голосовое сообщение: voice=${!!msg.voice}, audio=${!!msg.audio}`);
+      
       try {
         // Скачиваем голосовое сообщение
         const fileId = msg.voice?.file_id || msg.audio?.file_id;
+        log('INFO', `🎤 File ID: ${fileId}`);
+        
         if (fileId) {
           const file = await this.bot.getFile(fileId);
+          log('INFO', `🎤 Файл получен: ${file.file_path}`);
+          
           const fileStream = await this.bot.getFileStream(fileId);
           
           // Читаем файл в буфер
@@ -143,6 +149,9 @@ class TelegramBotService {
           voiceBuffer = Buffer.concat(chunks);
           
           log('INFO', `🎤 Получено голосовое сообщение размером ${voiceBuffer.length} байт`);
+          log('INFO', `🎤 Первые 100 байт: ${voiceBuffer.slice(0, 100).toString('hex')}`);
+        } else {
+          log('ERROR', '🎤 File ID не найден');
         }
       } catch (error) {
         log('ERROR', 'Ошибка скачивания голосового сообщения:', error);

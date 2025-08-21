@@ -187,26 +187,39 @@ export class FreeVoiceService {
     model?: string;
   } = {}): Promise<string> {
     try {
+      console.log('🎧 Начинаю распознавание речи через Whisper...');
+      console.log('🎧 Размер аудио буфера:', audioBuffer.length, 'байт');
+      console.log('🎧 Первые 100 байт:', audioBuffer.slice(0, 100).toString('hex'));
+      
       const {
         language = 'ru',
         model = 'base' // tiny, base, small, medium, large
       } = options;
 
       // Сначала конвертируем аудио в WAV формат для лучшей совместимости с Whisper
+      console.log('🎧 Конвертирую аудио в WAV формат...');
       const convertedAudio = await this.convertAudio(audioBuffer, 'wav');
+      console.log('🎧 Аудио сконвертировано, размер:', convertedAudio.length, 'байт');
       
       const inputFile = path.join(this.tempDir, `stt_input_${Date.now()}.wav`);
       const outputFile = path.join(this.tempDir, `stt_output_${Date.now()}.txt`);
       
       // Записываем конвертированное аудио во временный файл
       fs.writeFileSync(inputFile, convertedAudio);
+      console.log('🎧 Временный WAV файл создан:', inputFile);
+      
+      // Проверяем, что файл создался
+      const stats = fs.statSync(inputFile);
+      console.log('🎧 Размер временного файла:', stats.size, 'байт');
       
       console.log(`🎧 Запускаю Whisper для файла: ${inputFile}`);
       
       // Команда Whisper
       const command = `"${this.whisperPath}" "${inputFile}" --language ${language} --model ${model} --output_dir "${this.tempDir}" --output_format txt`;
+      console.log('🎧 Команда Whisper:', command);
       
       await execAsync(command);
+      console.log('🎧 Whisper выполнен успешно');
       
       // Читаем результат
       let transcript = '';
@@ -215,6 +228,7 @@ export class FreeVoiceService {
         console.log(`🎧 Whisper результат: "${transcript}"`);
       } else {
         console.warn('Файл с результатом Whisper не найден');
+        console.log('🎧 Проверяю содержимое временной директории:', fs.readdirSync(this.tempDir));
       }
       
       // Удаляем временные файлы
