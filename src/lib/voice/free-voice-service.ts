@@ -135,7 +135,7 @@ export class FreeVoiceService {
   } = {}): Promise<Buffer> {
     try {
       const {
-        voice = 'ru',
+        voice = 'ru', // Используем русский голос
         language = 'ru',
         speed = 140, // слова в минуту - медленнее для естественности
         pitch = 48,  // 0-100 - более нейтральный тон
@@ -147,8 +147,7 @@ export class FreeVoiceService {
       // Команда eSpeak с улучшенными настройками для естественности
       // -g 5: пауза между словами (0-10)
       // -k 5: акцент на ударных слогах (0-20)
-      // -r 0: диапазон тона (0-100)
-      const command = `"${this.espeakPath}" -v ${voice} -s ${speed} -p ${pitch} -a ${volume} -g 5 -k 5 -r 0 -w "${outputFile}" "${text}"`;
+      const command = `"${this.espeakPath}" -v ${voice} -s ${speed} -p ${pitch} -a ${volume} -g 5 -k 5 -w "${outputFile}" "${text}"`;
       
       console.log(`🗣️ Запускаю eSpeak: ${command}`);
       await execAsync(command);
@@ -341,7 +340,7 @@ export class FreeVoiceService {
     volume: number;
   } {
     const baseSettings = {
-      voice: 'ru',
+      voice: 'ru', // Используем русский голос
       language: 'ru'
     };
 
@@ -378,7 +377,7 @@ export class FreeVoiceService {
     volume: number;
   } {
     const baseSettings = {
-      voice: 'ru',
+      voice: 'ru', // Используем русский голос
       language: 'ru'
     };
 

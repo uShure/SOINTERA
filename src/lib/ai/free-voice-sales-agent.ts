@@ -126,7 +126,7 @@ export class FreeVoiceSalesAgent extends SalesAgent {
   } {
     // Базовые настройки для SOINTERA с eSpeak - более естественные
     const baseOptions = {
-      voice: 'ru',
+      voice: 'ru', // Используем русский голос
       language: 'ru',
       speed: 140, // Немного медленнее для естественности
       pitch: 48,  // Более нейтральный тон
