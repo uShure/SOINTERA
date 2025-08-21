@@ -65,6 +65,7 @@ class TelegramBotService {
     this.isRunning = false;
     this.messagesProcessed = 0;
     this.sessionStartTime = new Date();
+    this.processedMessages = new Set(); // Защита от дублирования
   }
 
   async start() {
@@ -110,6 +111,14 @@ class TelegramBotService {
   async handleMessage(msg) {
     const chatId = msg.chat.id;
     const userId = msg.from?.id?.toString();
+    
+    // Защита от дублирования сообщений
+    const messageKey = `${userId}_${msg.message_id}`;
+    if (this.processedMessages.has(messageKey)) {
+      log('WARN', `Дублирующееся сообщение ${messageKey}, игнорирую`);
+      return;
+    }
+    this.processedMessages.add(messageKey);
     
     // Проверяем тип сообщения: текст, голос или аудио
     let text = msg.text;

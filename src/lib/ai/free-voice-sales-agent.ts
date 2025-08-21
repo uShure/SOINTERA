@@ -69,14 +69,24 @@ export class FreeVoiceSalesAgent extends SalesAgent {
     if ((shouldRespondWithVoice || isVoice) && this.voiceEnabled) {
       try {
         console.log('🎤 Генерирую голосовой ответ...');
+        console.log('🎤 Текст для озвучивания:', result.response.substring(0, 100) + '...');
+        
         // Генерируем голосовой ответ
         const voiceBuffer = await this.generateVoiceResponse(result.response, context);
+        
+        if (!voiceBuffer || voiceBuffer.length === 0) {
+          throw new Error('Получен пустой голосовой буфер');
+        }
+        
         result.voiceResponse = voiceBuffer;
-        console.log('✅ Голосовой ответ сгенерирован успешно');
+        console.log('✅ Голосовой ответ сгенерирован успешно, размер:', voiceBuffer.length, 'байт');
       } catch (error) {
         console.error('Ошибка генерации голосового ответа (eSpeak):', error);
         // При ошибке отвечаем только текстом, но логируем проблему
         console.warn('⚠️ Голосовой ответ недоступен, отправляю только текст');
+        
+        // Очищаем voiceResponse, чтобы бот не пытался отправить пустое аудио
+        result.voiceResponse = undefined;
       }
     }
 

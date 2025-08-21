@@ -150,6 +150,7 @@ export class FreeVoiceService {
       // -r 0: диапазон тона (0-100)
       const command = `"${this.espeakPath}" -v ${voice} -s ${speed} -p ${pitch} -a ${volume} -g 5 -k 5 -r 0 -w "${outputFile}" "${text}"`;
       
+      console.log(`🗣️ Запускаю eSpeak: ${command}`);
       await execAsync(command);
       
       // Проверяем, что файл создан
@@ -157,8 +158,17 @@ export class FreeVoiceService {
         throw new Error('Не удалось создать аудио файл');
       }
 
+      // Проверяем размер файла
+      const stats = fs.statSync(outputFile);
+      console.log(`🗣️ Создан аудио файл: ${outputFile}, размер: ${stats.size} байт`);
+      
+      if (stats.size === 0) {
+        throw new Error('Создан пустой аудио файл');
+      }
+
       // Читаем файл в буфер
       const audioBuffer = fs.readFileSync(outputFile);
+      console.log(`🗣️ Аудио буфер создан, размер: ${audioBuffer.length} байт`);
       
       // Удаляем временный файл
       fs.unlinkSync(outputFile);
