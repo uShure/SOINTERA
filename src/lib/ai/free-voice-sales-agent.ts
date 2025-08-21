@@ -65,14 +65,18 @@ export class FreeVoiceSalesAgent extends SalesAgent {
     // Определяем, нужно ли отвечать голосом
     const shouldRespondWithVoice = this.shouldRespondWithVoice(context, result.response, isVoice);
 
-    if (shouldRespondWithVoice && this.voiceEnabled) {
+    // Если клиент отправил голосовое сообщение, ВСЕГДА пытаемся ответить голосом
+    if ((shouldRespondWithVoice || isVoice) && this.voiceEnabled) {
       try {
+        console.log('🎤 Генерирую голосовой ответ...');
         // Генерируем голосовой ответ
         const voiceBuffer = await this.generateVoiceResponse(result.response, context);
         result.voiceResponse = voiceBuffer;
+        console.log('✅ Голосовой ответ сгенерирован успешно');
       } catch (error) {
         console.error('Ошибка генерации голосового ответа (eSpeak):', error);
-        // При ошибке отвечаем только текстом
+        // При ошибке отвечаем только текстом, но логируем проблему
+        console.warn('⚠️ Голосовой ответ недоступен, отправляю только текст');
       }
     }
 
@@ -110,39 +114,47 @@ export class FreeVoiceSalesAgent extends SalesAgent {
     pitch: number;
     volume: number;
   } {
-    // Базовые настройки для SOINTERA с eSpeak
+    // Базовые настройки для SOINTERA с eSpeak - более естественные
     const baseOptions = {
       voice: 'ru',
       language: 'ru',
-      speed: 150,
-      pitch: 50,
-      volume: 100
+      speed: 140, // Немного медленнее для естественности
+      pitch: 48,  // Более нейтральный тон
+      volume: 95  // Немного тише для естественности
     };
 
     // Настройки для разных типов клиентов
     if (context.classification === 'beginner') {
-      // Для новичков - медленнее и четче
+      // Для новичков - медленнее и четче, но естественно
       return {
         ...baseOptions,
-        speed: 130,
-        pitch: 45,
-        volume: 105
+        speed: 125,
+        pitch: 46,
+        volume: 98
       };
     } else if (context.classification === 'experienced') {
-      // Для опытных - быстрее и профессиональнее
+      // Для опытных - уверенно, но не роботизированно
       return {
         ...baseOptions,
-        speed: 170,
-        pitch: 55,
-        volume: 100
+        speed: 155,
+        pitch: 50,
+        volume: 92
       };
     } else if (context.classification === 'ready_to_buy') {
-      // Для готовых к покупке - энергично и убедительно
+      // Для готовых к покупке - энергично, но человечно
       return {
         ...baseOptions,
-        speed: 160,
-        pitch: 60,
-        volume: 110
+        speed: 150,
+        pitch: 52,
+        volume: 96
+      };
+    } else if (context.classification === 'interested') {
+      // Для заинтересованных - дружелюбно и естественно
+      return {
+        ...baseOptions,
+        speed: 135,
+        pitch: 47,
+        volume: 94
       };
     }
 

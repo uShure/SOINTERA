@@ -137,15 +137,18 @@ export class FreeVoiceService {
       const {
         voice = 'ru',
         language = 'ru',
-        speed = 150, // слова в минуту
-        pitch = 50,  // 0-100
-        volume = 100 // 0-100
+        speed = 140, // слова в минуту - медленнее для естественности
+        pitch = 48,  // 0-100 - более нейтральный тон
+        volume = 95  // 0-100 - немного тише для естественности
       } = options;
 
       const outputFile = path.join(this.tempDir, `tts_${Date.now()}.wav`);
       
-      // Команда eSpeak с настройками
-      const command = `"${this.espeakPath}" -v ${voice} -s ${speed} -p ${pitch} -a ${volume} -w "${outputFile}" "${text}"`;
+      // Команда eSpeak с улучшенными настройками для естественности
+      // -g 5: пауза между словами (0-10)
+      // -k 5: акцент на ударных слогах (0-20)
+      // -r 0: диапазон тона (0-100)
+      const command = `"${this.espeakPath}" -v ${voice} -s ${speed} -p ${pitch} -a ${volume} -g 5 -k 5 -r 0 -w "${outputFile}" "${text}"`;
       
       await execAsync(command);
       
@@ -275,13 +278,14 @@ export class FreeVoiceService {
       ffmpeg(inputPath)
         .toFormat('mp3')
         .audioChannels(1)
-        .audioFrequency(22050)
-        .audioBitrate('48k')
+        .audioFrequency(24000) // Увеличиваем частоту для лучшего качества
+        .audioBitrate('64k')   // Увеличиваем битрейт для лучшего звучания
         .audioCodec('libmp3lame')
         .audioFilters([
-          'highpass=f=200',
-          'lowpass=f=8000',
-          'volume=1.2'
+          'highpass=f=150',    // Снижаем нижнюю границу для более теплого звука
+          'lowpass=f=10000',   // Увеличиваем верхнюю границу для четкости
+          'volume=1.1',        // Уменьшаем громкость для естественности
+          'compand=0.02,0.05,-60,-60,-30,-10,0,0,-35.1,-35.1,-25,-25,0,0,0,0:0,0,0,0' // Динамическое сжатие для естественности
         ])
         .on('end', () => {
           try {
