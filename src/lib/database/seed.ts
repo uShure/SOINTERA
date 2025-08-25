@@ -27,8 +27,8 @@ const courses = [
     duration: "5 дней"
   },
   {
-    name: "Курс по стрижкам. Фундамент",
-    url: "https://sointera-biz.ru/stajirovka",
+    name: "Фундамент",
+    url: "https://sointera-biz.ru/fundament",
     format: "online",
     price: 39000,
     category: "haircut",
