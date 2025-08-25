@@ -66,6 +66,17 @@ const courses = [
     duration: "3 месяца"
   },
   {
+    name: "Очный курс ДНК цвета",
+    url: "https://sointera-biz.ru/dna_color_offline",
+    format: "offline",
+    price: 95000,
+    category: "color",
+    description: "Очный курс по фундаментальной колористике без привязки к бренду. ВНИМАНИЕ: о наличии свободных мест уточняйте у менеджера @natalylini",
+    startDate: createDate(9, 30),
+    endDate: createDate(10, 2),
+    duration: "3 дня"
+  },
+  {
     name: "Наставник по колористике",
     url: "https://sointera-biz.ru/nastavnik-kolorist",
     format: "online",
