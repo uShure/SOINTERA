@@ -40,6 +40,8 @@ model Customer {
   satisfactionScore Float?       // оценка от менеджера 1-5
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+  
+  // Связи
   conversations    Conversation[]
   analytics        CustomerAnalytics[]
 }
@@ -254,3 +256,5 @@ model ManagerFeedback {
 
   createdAt DateTime @default(now())
 }
+
+
