@@ -578,7 +578,7 @@ export class SalesAgent {
       };
 
       return {
-        response: `По этому вопросу вас проконсультирует наш менеджер @${process.env.MANAGER_USERNAME}, я передам ей ваш запрос. Она свяжется с вами в ближайшее время.`,
+        response: `По этому вопросу вас проконсультирует наш менеджер @${process.env.MANAGER_USERNAME}, я передам ей ваш запрос.`,
         callManager: true,
         classification,
         managerInfo

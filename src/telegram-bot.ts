@@ -314,12 +314,28 @@ class TelegramBotService {
       this.messagesProcessed++;
       log('INFO', `✅ Ответ отправлен. Всего обработано сообщений: ${this.messagesProcessed}`);
 
-      // Если нужен менеджер, уведомляем
+      // Если нужен менеджер, создаем запрос и уведомляем
       if (result.callManager && result.managerInfo) {
         log('INFO', `⚠️ Требуется помощь менеджера! Передаю @${process.env.MANAGER_USERNAME}`);
-        await this.bot.sendMessage(chatId, 
-          `⚠️ Я передам ваш вопрос менеджеру @${process.env.MANAGER_USERNAME}, она свяжется с вами в ближайшее время для подробной консультации.`
-        );
+        
+        try {
+          // Создаем запрос менеджеру в базе данных
+          await prisma.managerRequest.create({
+            data: {
+              customerId: customer.id,
+              reason: result.managerInfo.request,
+              quality: 5, // Высокое качество лида
+              outcome: 'follow_up'
+            }
+          });
+          
+          // Отправляем уведомление менеджеру
+          await this.notifyManager(customer, result.managerInfo);
+          
+          log('INFO', '✅ Запрос менеджеру создан и уведомление отправлено');
+        } catch (error) {
+          log('ERROR', 'Ошибка создания запроса менеджеру:', error);
+        }
       }
 
     } catch (error) {
@@ -397,6 +413,64 @@ class TelegramBotService {
     }
 
     return customer;
+  }
+
+  async notifyManager(customer, managerInfo) {
+    const managerUsername = process.env.MANAGER_USERNAME;
+    if (!managerUsername) {
+      log('WARN', 'MANAGER_USERNAME не установлен в переменных окружения');
+      return;
+    }
+
+    try {
+      log('INFO', `📤 Отправляю уведомление менеджеру @${managerUsername}...`);
+      
+      // Отправляем уведомление менеджеру через бота
+      const managerChatId = await this.getManagerChatId(managerUsername);
+      if (managerChatId) {
+        const message = `🔔 **Требуется помощь менеджера!**\n\n👤 **Клиент:** ${customer.firstName || customer.username || customer.telegramId}\n📝 **Запрос:** ${managerInfo.request}\n\n⏰ **Время:** ${new Date().toLocaleString('ru-RU')}\n\n💬 **Связаться с клиентом:** https://t.me/${customer.username || customer.telegramId}`;
+        
+        await this.bot.sendMessage(managerChatId, message, { parse_mode: 'Markdown' });
+        log('INFO', '✅ Менеджер уведомлен через Telegram');
+      } else {
+        log('WARN', `Не удалось найти чат менеджера @${managerUsername}, но запрос сохранен в базе данных`);
+      }
+      
+      // В любом случае логируем информацию о запросе менеджеру
+      log('INFO', `📋 Запрос менеджеру: Клиент ${customer.firstName || customer.username || customer.telegramId}, Запрос: ${managerInfo.request}`);
+      
+    } catch (error) {
+      log('ERROR', 'Ошибка отправки уведомления менеджеру:', error);
+    }
+  }
+
+  async getManagerChatId(username) {
+    try {
+      // Пытаемся получить информацию о пользователе через getUpdates
+      const updates = await this.bot.getUpdates();
+      for (const update of updates) {
+        if (update.message && update.message.from && update.message.from.username === username) {
+          return update.message.chat.id;
+        }
+      }
+      
+      // Если не нашли в обновлениях, попробуем через getChat
+      try {
+        const chat = await this.bot.getChat(`@${username}`);
+        if (chat && chat.id) {
+          return chat.id;
+        }
+      } catch (chatError) {
+        log('WARN', `Не удалось получить чат для @${username}:`, chatError.message);
+      }
+      
+      // Если все не получилось, возвращаем null
+      log('WARN', `Не удалось найти chat ID для менеджера @${username}`);
+      return null;
+    } catch (error) {
+      log('ERROR', 'Ошибка получения chat ID менеджера:', error);
+      return null;
+    }
   }
 
   async stop() {
