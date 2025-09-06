@@ -6,6 +6,8 @@
   "scripts": {
     "start": "tsx src/telegram-userbot.ts",
     "start:bot": "tsx src/telegram-bot.ts",
+    "start:webapp": "cd webapp && npm start",
+    "dev:webapp": "cd webapp && npm run dev",
     "seed": "tsx src/lib/database/seed.ts",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
@@ -16,7 +18,9 @@
     "voice:check": "tsx src/scripts/voice-check.ts",
     "voice:tts": "tsx src/scripts/voice-tts.ts",
     "voice:stt": "tsx src/scripts/voice-stt.ts",
-    "voice:stats": "tsx src/scripts/voice-stats.ts"
+    "voice:stats": "tsx src/scripts/voice-stats.ts",
+    "send:webapp": "tsx src/scripts/send-webapp-message.ts",
+    "test:webapp": "node test-webapp.js"
   },
   "dependencies": {
     "@google-cloud/speech": "^7.2.0",

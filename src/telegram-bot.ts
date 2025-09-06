@@ -76,6 +76,9 @@ class TelegramBotService {
       const me = await this.bot.getMe();
       log('INFO', `🤖 Бот запущен: @${me.username} (${me.first_name})`);
       log('INFO', `📊 ID бота: ${me.id}`);
+      
+      // Устанавливаем кнопку меню с Web App
+      await this.setMenuButton();
     } catch (error) {
     log('ERROR', 'Детали ошибки:', error.message);
     log('ERROR', 'Stack:', error.stack);
@@ -184,7 +187,41 @@ class TelegramBotService {
 
 Или просто напишите свой вопрос - отвечу с удовольствием 😊`;
       
-      await this.bot.sendMessage(chatId, welcomeMessage);
+      // Отправляем приветственное сообщение с кнопкой Web App
+      await this.bot.sendMessage(chatId, welcomeMessage, {
+        reply_markup: {
+          inline_keyboard: [
+            [{
+              text: '📞 Записаться на консультацию',
+              web_app: {
+                url: process.env.WEBAPP_URL || 'https://your-webapp-url.com/static.html'
+              }
+            }]
+          ]
+        }
+      });
+      return;
+    }
+
+    // Обработка команды /consultations - отправляет сообщение с кнопкой Web App
+    if (text === '/consultations') {
+      const consultationMessage = `💼 **Консультации SOINTERA**
+
+Выберите подходящий тип консультации для получения персональных рекомендаций по обучению.`;
+
+      await this.bot.sendMessage(chatId, consultationMessage, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{
+              text: 'Открыть',
+              web_app: {
+                url: process.env.WEBAPP_URL || 'https://your-webapp-url.com/static.html'
+              }
+            }]
+          ]
+        }
+      });
       return;
     }
 
@@ -441,6 +478,34 @@ class TelegramBotService {
       
     } catch (error) {
       log('ERROR', 'Ошибка отправки уведомления менеджеру:', error);
+    }
+  }
+
+  async setMenuButton() {
+    try {
+      // Устанавливаем кнопку меню с Web App
+      await this.bot.setMyCommands([
+        { command: 'start', description: 'Начать работу с ботом' },
+        { command: 'consultations', description: 'Записаться на консультацию' }
+      ]);
+
+      // Устанавливаем кнопку меню (если поддерживается)
+      try {
+        await this.bot.setChatMenuButton({
+          menu_button: {
+            type: 'web_app',
+            text: 'Консультации',
+            web_app: {
+              url: process.env.WEBAPP_URL || 'https://your-webapp-url.com'
+            }
+          }
+        });
+        log('INFO', '✅ Кнопка меню с Web App установлена');
+      } catch (menuError) {
+        log('WARN', 'Не удалось установить кнопку меню (возможно, не поддерживается):', menuError.message);
+      }
+    } catch (error) {
+      log('ERROR', 'Ошибка установки кнопки меню:', error);
     }
   }
 

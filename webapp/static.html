@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOINTERA - Консультации</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            line-height: 1.4;
+            font-size: 16px;
+            padding: 12px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--tg-theme-text-color, #000000);
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: var(--tg-theme-hint-color, #999999);
+        }
+
+        .consultation-card {
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+        }
+
+        .consultation-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--tg-theme-text-color, #000000);
+        }
+
+        .consultation-description {
+            font-size: 13px;
+            color: var(--tg-theme-hint-color, #666666);
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .consultation-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--tg-theme-button-color, #0088cc);
+            margin-bottom: 12px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 10px 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            background: var(--tg-theme-button-color, #0088cc);
+            color: var(--tg-theme-button-text-color, #ffffff);
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .features {
+            margin-top: 16px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .feature-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            color: var(--tg-theme-button-color, #0088cc);
+        }
+
+        .contact-info {
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 16px;
+            text-align: center;
+        }
+
+        .contact-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .contact-text {
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #666666);
+            margin-bottom: 8px;
+        }
+
+        .contact-link {
+            color: var(--tg-theme-button-color, #0088cc);
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">SOINTERA</div>
+        <div class="subtitle">Профессиональные консультации</div>
+    </div>
+
+    <div class="consultation-card">
+        <div class="consultation-title">Базовая консультация</div>
+        <div class="consultation-description">Первичная консультация по выбору курса, определению уровня подготовки и составлению плана обучения.</div>
+        <div class="consultation-price">Бесплатно</div>
+        
+        <div class="features">
+            <div class="feature-item">
+                <span class="feature-icon">✓</span>
+                <span>Анализ текущего уровня</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">✓</span>
+                <span>Рекомендации по курсам</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">✓</span>
+                <span>Ответы на вопросы</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">✓</span>
+                <span>План развития</span>
+            </div>
+        </div>
+        
+        <button class="btn" onclick="selectConsultation('basic')">
+            Выбрать консультацию
+        </button>
+    </div>
+
+    <div class="consultation-card">
+        <div class="consultation-title">Расширенная консультация</div>
+        <div class="consultation-description">Детальная консультация с анализом портфолио, составлением индивидуального плана обучения и рекомендациями по карьере.</div>
+        <div class="consultation-price">2 000 ₽</div>
+        
+        <div class="features">
+            <div class="feature-item">
+                <span class="feature-icon">✓</span>
+                <span>Анализ портфолио</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">✓</span>
+                <span>Индивидуальный план</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">✓</span>
+                <span>Карьерные рекомендации</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">✓</span>
+                <span>Связь с менеджером</span>
+            </div>
+        </div>
+        
+        <button class="btn" onclick="selectConsultation('advanced')">
+            Выбрать консультацию
+        </button>
+    </div>
+
+    <div class="consultation-card">
+        <div class="consultation-title">Премиум консультация</div>
+        <div class="consultation-description">Полная консультация с мастером, включая практические советы, разбор техник и персональные рекомендации.</div>
+        <div class="consultation-price">5 000 ₽</div>
+        
+        <div class="features">
+            <div class="feature-item">
+                <span class="feature-icon">✓</span>
+                <span>Консультация с мастером</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">✓</span>
+                <span>Практические советы</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">✓</span>
+                <span>Разбор техник</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">✓</span>
+                <span>Персональные рекомендации</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">✓</span>
+                <span>Последующая поддержка</span>
+            </div>
+        </div>
+        
+        <button class="btn" onclick="selectConsultation('premium')">
+            Выбрать консультацию
+        </button>
+    </div>
+
+    <div class="contact-info">
+        <div class="contact-title">Нужна помощь с выбором?</div>
+        <div class="contact-text">Наш менеджер поможет подобрать подходящую консультацию</div>
+        <a href="https://t.me/natalylini" class="contact-link" target="_blank">
+            Связаться с менеджером
+        </a>
+    </div>
+
+    <script>
+        // Инициализация Telegram Web App
+        const tg = window.Telegram.WebApp;
+        
+        // Настраиваем Web App
+        tg.ready();
+        tg.expand();
+        
+        // Устанавливаем тему
+        document.body.style.backgroundColor = tg.themeParams.bg_color || '#ffffff';
+        document.body.style.color = tg.themeParams.text_color || '#000000';
+
+        function selectConsultation(consultationId) {
+            const consultations = {
+                'basic': {
+                    title: 'Базовая консультация',
+                    price: 'Бесплатно',
+                    duration: '15-20 минут'
+                },
+                'advanced': {
+                    title: 'Расширенная консультация',
+                    price: '2 000 ₽',
+                    duration: '45-60 минут'
+                },
+                'premium': {
+                    title: 'Премиум консультация',
+                    price: '5 000 ₽',
+                    duration: '90 минут'
+                }
+            };
+            
+            const consultation = consultations[consultationId];
+            
+            if (!consultation) {
+                tg.showAlert('Консультация не найдена');
+                return;
+            }
+            
+            // Показываем подтверждение
+            const message = `Вы выбрали: ${consultation.title}\n\nЦена: ${consultation.price}\nДлительность: ${consultation.duration}\n\nДля записи на консультацию свяжитесь с нашим менеджером.`;
+            
+            // Отправляем данные в Telegram
+            tg.sendData(JSON.stringify({
+                action: 'consultation_selected',
+                consultation: consultation,
+                timestamp: new Date().toISOString()
+            }));
+            
+            // Показываем уведомление
+            tg.showAlert(message, () => {
+                tg.close();
+            });
+        }
+
+        // Обработка ошибок
+        window.addEventListener('error', (e) => {
+            console.error('Ошибка:', e.error);
+            tg.showAlert('Произошла ошибка. Попробуйте обновить страницу.');
+        });
+    </script>
+</body>
+</html>
