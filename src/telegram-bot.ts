@@ -184,7 +184,41 @@ class TelegramBotService {
 
 Или просто напишите свой вопрос - отвечу с удовольствием 😊`;
       
-      await this.bot.sendMessage(chatId, welcomeMessage);
+      // Отправляем приветственное сообщение с кнопкой Web App
+      await this.bot.sendMessage(chatId, welcomeMessage, {
+        reply_markup: {
+          inline_keyboard: [
+            [{
+              text: '📞 Записаться на консультацию',
+              web_app: {
+                url: process.env.WEBAPP_URL || 'https://your-webapp-url.com'
+              }
+            }]
+          ]
+        }
+      });
+      return;
+    }
+
+    // Обработка команды /consultations - отправляет сообщение с кнопкой Web App
+    if (text === '/consultations') {
+      const consultationMessage = `💼 **Консультации SOINTERA**
+
+Выберите подходящий тип консультации для получения персональных рекомендаций по обучению.`;
+
+      await this.bot.sendMessage(chatId, consultationMessage, {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{
+              text: 'Открыть',
+              web_app: {
+                url: process.env.WEBAPP_URL || 'https://your-webapp-url.com'
+              }
+            }]
+          ]
+        }
+      });
       return;
     }
 
